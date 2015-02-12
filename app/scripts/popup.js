@@ -1,6 +1,5 @@
 if(window.location.toString() == "https://soundcloud.com/stream") {
 
-  var repostTitles = [];
   var repostsRemoved = false;
   setTimeout(function() {
   console.log("★★★★★★SoundCloud Enhancer loaded!★★★★★★");
@@ -25,16 +24,17 @@ if(window.location.toString() == "https://soundcloud.com/stream") {
     console.log("Now Playing: " + $("a.playbackTitle__link").text());
 
     setInterval(function() {
-        if(repostsRemoved == true) {
-          var nowPlaying = $("a.playbackTitle__link").text();
+      if(repostsRemoved == true) {
+        var nowPlaying = $("a.playbackTitle__link").text();
+        if(nowPlaying != "") {
           for( i = 0; i < repostTitles.length; i++ ) {
             if(repostTitles[i].indexOf(nowPlaying) > -1) {
             $(".skipControl__next").trigger("click");
+            }
+          }
         }
       }
-    }
-  }, 800)
-
+    }, 800)
   };
 
 

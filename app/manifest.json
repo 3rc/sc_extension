@@ -4,6 +4,7 @@
   "version": "0.1",
   "manifest_version": 2,
   "description": "For a better SoundCloud Experience",
+  "web_accessible_resources": ["images/scpluspluswidesmall.png"],
   "icons": {
     "128": "images/scplusplus.png"
   },

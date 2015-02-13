@@ -1,8 +1,26 @@
 .moreoptions {
 	background: #343434;
 	padding: 5px;
+	margin-bottom: 20px;
 }
 
-.stream-reposts {
+.moreoptions p {
+	float: right;
+}
+
+.sc-plus-plus {
+	max-height: 15px;
+	display: inline;
+}
+
+.l-three-column, .l-fluid-fixed {
+	margin-top: 20px;
+}
+
+.reposts-show {
+	display: visible;
+}
+
+.stream-hide, .stream-reposts .hidden {
 	display: none;
 }

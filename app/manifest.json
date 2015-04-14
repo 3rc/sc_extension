@@ -1,19 +1,19 @@
 {
-  "name": "SoundCloud ++",
+  "name": "SoundShroud",
   "permissions": [ "tabs", "\u003Call_urls>" ],
-  "version": "0.1",
+  "version": "1.1",
   "manifest_version": 2,
-  "description": "For a better SoundCloud Experience",
-  "web_accessible_resources": ["images/scpluspluswidesmall.png"],
+  "description": "De-clutter your SoundCloud Stream",
   "icons": {
-    "128": "images/scplusplus.png"
+    "128": "images/soundshroud.png"
   },
   "content_scripts": [ {
     "js": [
       "scripts/popup.js",
       "scripts/jquery.2.1.3-min.js",
       "scripts/underscore-min.js"],
-    "css": ["styles/main.css"],
+    "css": ["styles/main.css",
+    "styles/iosbutton.css"],
     "matches": ["https://soundcloud.com/*"],
     "run_at": "document_end"
     }],
@@ -21,15 +21,18 @@
   "background": {
     "scripts": [
       "scripts/chromereload.js",
-      "scripts/background.js"
-    ]
+      "scripts/background.js"],
+    "persistent": true
   },
-  "browser_action": {
+  "page_action": {
     "default_icon": {
-      "19": "images/scplusplus.png",
-      "38": "images/scplusplus.png"
+      "19": "images/soundshroud.png",
+      "38": "images/soundshroud.png"
     },
-    "default_title": "SoundCloud Enhancer",
-    "default_popup": "popup.html"
-  }
+    "default_title": "SoundShroud",
+    "default_popup": "popup.html",
+    "matches": ["https://soundcloud.com/*"]
+  },
+  "permissions": [ "storage", "https://script.google.com/macros/s/AKfycbyCUDY1dT3WtEhiqJ0t8k5AzCk2akxMPZkfQmYm2IoFz5-DZ1zv/exec" ],
+  "web_accessible_resources": ["images/soundshroud.png"]
 }

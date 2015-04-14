@@ -1,30 +1,50 @@
 if(window.location.toString().indexOf("soundcloud.com") > -1) {
 
+  permahideList = [];
+  permahideTitles = [];
+  permahideStored = [];
+  soundShroudLogo = chrome.extension.getURL('images/soundshroud.png');
+  //get list of hidden songs from Chrome storage area
+  chrome.storage.sync.get('permahideStored', function(result) {
+    permahideStored = result.permahideStored;
+    if(permahideStored.length != 0) {
+      permahideList = permahideStored;
+    }
+    console.log("Loaded " + permahideStored.length + " song(s) from permahide list");
+  });
+  chrome.storage.sync.get('permahideTitlesStored', function(result) {
+    permahideTitlesStored = result.permahideTitlesStored;
+    if(permahideStored.length != 0) {
+      permahideTitles = permahideTitlesStored;
+    }
+  });
 
-  var streamPlus = false;
-  var userPlus = false;
-  var searchPlus = false;
-  var repostsRemoved = false;
-  var logo = chrome.extension.getURL('images/scpluspluswidesmall.png');
+  //Sets variables to default to re-initialize functionality
+  function resetBarStatus() {
+    streamBar = false;
+    removeReposts = false;
+    repostsShown = false;
+    repostsInit = false;
+    loadedSize = 0;
+    permahideMode = false;
+    songsToSkip = [];
+    songsToSkip.push(permahideTitles)
+  }
+  resetBarStatus();
+
+  var permahideTooltip = "<div class='permahide-tooltip'>Click on any sound to \n add to your hidden list</div>"
+
   //Check the URL of SC page to determine appropriate function bar
   function checkSCPage() {
     if(window.location.toString().indexOf("/stream") > -1) {
-      addStreamPlus()
+      addStreamBar()
+      mainStream = $(".stream");
     }
-    else if(window.location.toString().indexOf("/search") > -1) {
-      addSearchPlus()
-    }
-    else if(window.location.toString().indexOf("/explore") > -1) {
-      clearMess()
-    }
-    else if(window.location.toString().indexOf("/upload") > -1) {
-      clearMess()
-    }
-    else if(window.location.toString().indexOf("/you") > -1) {
-      clearMess()
-    }
-    else if(window.location.toString().lastIndexOf("/") == 22) {
-      addUserPlus()
+    else {
+      $(".soundshroud-bar").remove();
+      $(".permahide-tooltip").remove();
+      $(".soundshroud-show").remove();
+      resetBarStatus();
     }
   }
 
@@ -33,99 +53,140 @@ if(window.location.toString().indexOf("soundcloud.com") > -1) {
     checkSCPage()
   }, 3000);
 
-  function clearMess() {
-    if(streamPlus == true || userPlus == true || searchPlus == true) {
-      $(".moreoptions").remove();
-      $(".stream-reposts").remove()
-    }
-  }
+  //checks every 3 seconds if reposts need to be removed
+  setInterval(function() {
+    checkStreamSize()
+  }, 3000)
 
-  function addStreamPlus() {
-    if(window.streamPlus == false) {
-      clearMess();
-      console.log("★★★★★★SoundCloud Stream★★★★★★");
-      $("header").append("<div class='moreoptions'><img src='" + logo + "' class='sc-plus-plus'>&nbsp;<button id='remove-reposts'>Remove Reposts</button><p>v0.1 - if anything breaks, just refresh!</p></div>");
-      $(".l-content").append("<div class='stream-reposts hidden'></div>");
+  //Adds the Stream Bar for removing reposts, etc.
+  function addStreamBar() {
+    if(window.streamBar == false) {
+      resetBarStatus();
+      $("header").append("<div class='soundshroud-bar'><h2 id='soundshroud'>SoundShroud v1.1</h2>" + "<div class='soundshroud-functions'>" +
+        "<label>Remove Reposts: <input type='checkbox' class='ios-switch' id='remove-reposts'><div class='switch'></div></label>" + 
+        "<label>Perma-Hide: <input type='checkbox' class='ios-switch' id='permahide'><div class='switch'></div></label>" +
+        // "<label><input type='checkbox' class='ios-switch' id='filter-comments'><div class='switch'></div>Filter Comments</label>" +
+        "</div><p><button id='reset-permahide'>Reset Permahide List</button></p></div>" +
+        "<div class='soundshroud-show'><a href='#'><img id='soundshroud-toggle' src='" + soundShroudLogo + "'></a></div>");
       $("#remove-reposts").click(function() {
-        removeReposts($(".stream"))
+        if(removeReposts == false && repostsShown == false) {
+          removeReposts = true
+          killReposts(mainStream)
+          console.log("Remove reposts active")
+        }
+        else {
+          removeReposts = false
+          console.log("Remove reposts inactive")
+        }
       });
-      window.streamPlus = true;
-      window.userPlus = false;
-      window.searchPlus = false;
-      window.repostsRemoved = false
-    }
-  }
-
-  function addUserPlus() {
-    if(userPlus == false) {
-      clearMess();
-      console.log("★★★★★★SoundCloud User★★★★★★");
-      $("header").append("<div class='moreoptions'><img src='" + logo + "' class='sc-plus-plus'>&nbsp;<button id='remove-reposts'>Remove Reposts</button><p>v0.1 - if anything breaks, just refresh!</p></div>");
-      $(".userStream").append("<div class='stream-reposts hidden'></div>");
-      $("#remove-reposts").click(function() {
-        removeReposts($(".userStream__list"))
+      $("#permahide").click(function() {
+        togglePermahide()
       });
-      window.userPlus = true;
-      window.streamPlus = false;
-      window.searchPlus = false;
-      window.repostsRemoved = false
+      $("#reset-permahide").click(function() {
+        chrome.storage.sync.clear()
+        permahideList = [];
+      })
+      window.streamBar = true;
+      window.removeReposts = false;
+      $(".soundshroud-bar").hide();
+      $(".soundshroud-show").click(function() {
+        $(".soundshroud-bar").toggle();
+      })
+    }
+    killPermahide()
+    removePromoted()
+    $(".dashbox").hide()
+  }
+
+  //Checks number of sounds in the stream 
+  function checkStreamSize() {
+    var currentSize = $(".soundList__item").length
+    if(currentSize !== loadedSize) {
+      killPermahide(mainStream)
+      if(permahideMode == true) {
+        if(currentSize >= loadedSize) {
+          $("#permahide").trigger("click")
+        }
+      }
+      if(removeReposts == true) {
+        killReposts(mainStream)
+      }
+      loadedSize = currentSize
     }
   }
 
-  function addSearchPlus() {
-    if(searchPlus == false) {
-      clearMess();
-      console.log("★★★★★★SoundCloud Search★★★★★★");
-      $("header").append("<div class='moreoptions'><img src='" + logo + "' class='sc-plus-plus'>&nbsp;Filter Search Results coming soon, srsly.</div>");
-      window.searchPlus = true;
-      window.streamPlus = false;
-      window.userPlus = false;
-      window.repostsRemoved = false
-    }
-
+  //Looks for promoted sounds or profiles and removes them from the DOM
+  function removePromoted() {
+      $(".promotedBadge").closest("li").remove()
   }
-  function removeReposts() {
-    window.repostsRemoved = true;
-    if(window.streamPlus == true) {
-      $(".stream-reposts").append($(".sound__header:contains('Reposted')").parent().parent().parent());
-    }
-    else if(window.userPlus == true) {
-      $(".stream-reposts").append($("[aria-label~='reposted']").parent().parent())
-    }
 
-    $("#toggleReposts").remove();
-    $(".moreoptions").append("<button id='toggleReposts'>Show/Hide Reposts</button>");
-    $("#toggleReposts").click(function() {
-      showReposts()
-    })
+  //Removes selected hidden tracks from the stream
+  function killPermahide() {
+    for(i = 0; permahideList.length > i; i++) {
+      $("a[href='" + permahideList[i] +"']").parent().parent().parent().remove()
+    }
+  }
 
-    repostTitles = [];
+  //Removes reposts from the stream
+  function killReposts() {
+    if(repostsInit == false) {
+      $(".l-content").append("<div class='stream-reposts hidden'></div>")
+    }
+    repostsInit = true;
+    $(".stream-reposts").append($(".sound__header:contains('Reposted')").parent().parent().parent());
+
     var reposts = $(".stream-reposts").find(".soundTitle__title");
 
     for( i = 0; i < reposts.length; i++) {
-      repostTitles.push(reposts[i].innerText)
+      songsToSkip.push(reposts[i].innerText)
+    }
+    songsToSkip = _.uniq(songsToSkip)
+
+    $(".stream-reposts").remove()
+    $(".l-content").append("<div class='stream-reposts hidden'></div>")
+
+  }
+
+  //Adds the selected track to local DB to be permanently ignored, and remote DB for stat counting.
+  function togglePermahide() {
+    if(permahideMode == true) {
+      permahideMode = false
+      $(".permahide-tooltip").remove()
+      $(".soundList__item").removeClass("hide-overlay")
+    }
+    else {
+      $(".soundList__item").click(function(e) {
+        if(permahideMode == true) {
+          var songUrl = $(this).find(".soundTitle__title").attr("href")
+          var songTitle = $(this).find(".soundTitle__title").children("span").text()
+          console.log("Added to permahide list: " + songTitle)
+          permahideList.push(songUrl)
+          permahideTitles.push(songTitle)
+          songsToSkip.push(songTitle)
+          chrome.storage.sync.set({'permahideStored': permahideList}, function() {})
+          chrome.storage.sync.set({'permahideTitlesStored': permahideTitles}, function() {})
+          e.preventDefault()
+          $(this).remove()
+        }
+      })
+      permahideMode = true
+      $("body").append(permahideTooltip)
+      $(".soundList__item").addClass("hide-overlay")
     }
 
-    var repostTitles = _.uniq(repostTitles);
+  }
 
-    setInterval(function() {
-      if(repostsRemoved == true) {
-        var nowPlaying = $("a.playbackTitle__link").text();
-        if(nowPlaying != "") {
-          for( i = 0; i < repostTitles.length; i++ ) {
-            if(repostTitles[i].indexOf(nowPlaying) > -1) {
-            $(".skipControl__next").trigger("click");
-            }
-          }
+  //Checks the currently playing sound against the removed sounds
+  setInterval(function() {
+    var nowPlaying = $("a.playbackTitle__link").text();
+    if(nowPlaying != "") {
+      songsToSkip = _.uniq(songsToSkip);
+      for( i = 0; i < songsToSkip.length; i++ ) {
+        if(songsToSkip[i].indexOf(nowPlaying) > -1) {
+          $(".skipControl__next").trigger("click")
         }
       }
-    }, 800)
-  }
-
-  function showReposts() {
-    $(".stream-reposts").toggleClass("hidden");
-    $(".stream").toggleClass("stream-hide")
-  }
-
+    }
+  }, 800)
 
 }

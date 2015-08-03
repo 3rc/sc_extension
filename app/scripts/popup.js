@@ -43,7 +43,7 @@ if(window.location.toString().indexOf("soundcloud.com") > -1) {
     else {
       $(".soundshroud-bar").remove();
       $(".permahide-tooltip").remove();
-      $(".soundshroud-show").remove();
+      $("#soundshroud-toggle").remove();
       resetBarStatus();
     }
   }
@@ -67,7 +67,7 @@ if(window.location.toString().indexOf("soundcloud.com") > -1) {
         "<label>Perma-Hide: <input type='checkbox' class='ios-switch' id='permahide'><div class='switch'></div></label>" +
         // "<label><input type='checkbox' class='ios-switch' id='filter-comments'><div class='switch'></div>Filter Comments</label>" +
         "</div><p><button id='reset-permahide'>Reset Permahide List</button></p></div>" +
-        "<div class='soundshroud-show'><a href='#'><img id='soundshroud-toggle' src='" + soundShroudLogo + "'></a></div>");
+        "<img id='soundshroud-toggle' src='" + soundShroudLogo + "'>");
       $("#remove-reposts").click(function() {
         if(removeReposts == false && repostsShown == false) {
           removeReposts = true
@@ -89,7 +89,7 @@ if(window.location.toString().indexOf("soundcloud.com") > -1) {
       window.streamBar = true;
       window.removeReposts = false;
       $(".soundshroud-bar").hide();
-      $(".soundshroud-show").click(function() {
+      $("#soundshroud-toggle").click(function() {
         $(".soundshroud-bar").toggle();
       })
     }
